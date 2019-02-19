@@ -86,6 +86,7 @@ fun stDev(list: List<Float>, listAvgOfRun: List<Float>): List<Float> {
     return newList
 }
 
+
 fun main() {
 
     val bestFitOfGen = mutableListOf<Individual>()
@@ -101,8 +102,14 @@ fun main() {
             aggregateStats(generation, bestFitOfGen, worstFitPerGen, avgFitPerGen)
         }
     }
-    val mapOfBestFitOfGen: List<Float> = bestFitOfGen.map { individual -> individual.fitness!! }
+    val bestOfRuns = mutableListOf<Individual>()
 
+    val mapOfBestFitOfGen: List<Float> = bestFitOfGen.map { individual -> individual.fitness!! }
+    var bestOfEachGenPerRun: List<Individual>
+    for (run in (0..29)){
+        bestOfEachGenPerRun = bestFitOfGen.filterIndexed { index, _:Individual -> (index - run) % 30 == 0}
+        bestOfRuns.add(bestOfEachGenPerRun.maxBy { individual ->individual.fitness!!  }!!)
+    }
 
     val bestOfRunOfBestOfGen = mutableListOf<Individual>()
     val avgOfRunOfAvgOfGen = mutableListOf<Float>()
@@ -151,6 +158,55 @@ fun main() {
 //    }
 //    stdvBestOfRun = (sqrt(sumForStdv / 6f))
 //    println("sd: $stdvBestOfRun")
+
+    val columnTitleTmpt = "Gen\t%d:".padStart(26)
+    val avg_tmpt = "avg:\t%8.4f".padStart(24)
+    val best_tmpt = "best:\t%8.4f".padStart(24)
+    val gene_tmpt = "(%.3f, %.3f, %.3f)"
+    val wrst_tmpt = "worst:\t%8.4f".padStart(24)
+    val stdv_tmpt = "s.d.:\t%8.4f".padStart(24)
+    val rowTitleTmpt ="Run %d:".padEnd(220,'-')
+
+
+
+    for(i in (0..5))print(columnTitleTmpt.format(i))
+    print("Run Stats:".padStart(24))
+    println()
+    for(i in (0..29)) {
+        println(rowTitleTmpt.format(i + 1))
+        for (j in (0..5)) print(avg_tmpt.format(avgFitPerGen[(6 * j) + i]))
+        println()
+        for (j in (0..5)) print(best_tmpt.format(bestFitOfGen[(6 * j) + i].fitness))
+        println()
+        for (j in (0..5)) print("%28s".format(
+            gene_tmpt.format(
+                bestFitOfGen[(6 * j) + i].gene[0],
+                bestFitOfGen[(6 * j) + i].gene[1],
+                bestFitOfGen[(6 * j) + i].gene[2] ))
+        )
+        println()
+        for (j in (0..5)) print(wrst_tmpt.format(worstFitPerGen[(6 * j) + i].fitness))
+        println()
+        for (j in (0..5)) print("%28s".format(
+            gene_tmpt.format(
+                worstFitPerGen[(6 * j) + i].gene[0],
+                worstFitPerGen[(6 * j) + i].gene[1],
+                worstFitPerGen[(6 * j) + i].gene[2]))
+        )
+        println()
+    }
+    println("Totals:".padEnd(220,'-'))
+    for(j in (0..5)) print(avg_tmpt.format(avgOfRunOfAvgOfGen[j]))
+    println()
+    for(j in (0..5)) print(stdv_tmpt.format(stDevOfRunOfAvgOfGen[j]))
+    println()
+    for(j in (0..5)) print(best_tmpt.format(bestOfRunOfBestOfGen[j].fitness))
+    println()
+    for(j in (0..5)) print("%s".format(stdv_tmpt.format(stDevOfRunOfBestOfGen[j])))
+    println()
+    for(j in (0..5)) print(gene_tmpt.format(bestFitOfGen[ j ].gene[0],
+        bestFitOfGen[j].gene[1],
+        bestFitOfGen[j].gene[2]))
 
 
 
