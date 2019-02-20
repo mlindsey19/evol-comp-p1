@@ -78,7 +78,7 @@ fun stDev(list: List<Float>, listAvgOfRun: List<Float>): List<Float> {
     val newList = mutableListOf<Float>()
     for (gen in (0..5)) {
         var sumForStdev = 0f
-        for (i in (0..179).filter { i -> (i - gen) % 6 == 0 }) {
+        for (i in (0..174).filter { i -> (i - gen) % 6 == 0 }) {
             sumForStdev += (list[i] - listAvgOfRun[gen]).pow(2)
         }
         newList.add( sqrt(sumForStdev / Runs) )
@@ -103,70 +103,44 @@ fun main() {
         }
     }
     val bestOfRuns = mutableListOf<Individual>()
+    val avgOfRunOfAvgOfGen = mutableListOf<Float>()
+
+    for(i in (0..174).step(6)) {
+        var bestOfEachGenPerRun: List<Individual> = bestFitOfGen.slice(i..(i + 5))
+        bestOfRuns.add(bestOfEachGenPerRun.minBy { individual -> individual.fitness!! }!!)
+        var avgOfEachGenPerRun: List<Float> = avgFitPerGen.slice(i..(i + 5))
+        avgOfRunOfAvgOfGen.add(avgOfEachGenPerRun.average().toFloat())
+    }
+
+    val bestOfGenForAllRuns = mutableListOf<Individual>()
+    val avgOfRunOfBestOfGen = mutableListOf(0f,0f,0f,0f,0f,0f)
+
+
+    var avgOfAvgOfGenForAllRuns = mutableListOf(0f,0f,0f,0f,0f,0f)
+
+
+    for(i in (0..5)){
+        val bestTemp = mutableListOf<Individual>()
+        for (j in (0..174).step(6)) {
+            avgOfAvgOfGenForAllRuns[i] += avgFitPerGen[i + j] / Runs
+            avgOfRunOfBestOfGen[i] += bestFitOfGen[i + j].fitness!! / Runs
+            bestTemp.add(bestFitOfGen[i + j])
+        }
+        bestOfGenForAllRuns.add(bestTemp.minBy { individual -> individual.fitness!! } !!)
+    }
 
     val mapOfBestFitOfGen: List<Float> = bestFitOfGen.map { individual -> individual.fitness!! }
-    var bestOfEachGenPerRun: List<Individual>
-    for (run in (0..29)){
-        bestOfEachGenPerRun = bestFitOfGen.filterIndexed { index, _:Individual -> (index - run) % 30 == 0}
-        bestOfRuns.add(bestOfEachGenPerRun.maxBy { individual ->individual.fitness!!  }!!)
-    }
-
-    val bestOfRunOfBestOfGen = mutableListOf<Individual>()
-    val avgOfRunOfAvgOfGen = mutableListOf<Float>()
-    val avgOfRunOfBestOfGen = mutableListOf<Float>()
-
-
-
-    for (gen in (0..5)) {
-        var bestTemp = Individual(mutableListOf(10f, 10f, 10f), 1000f)//placeholder
-        var avgAvgPerRunTemp = 0f;
-        var avgBestPerRunTemp = 0f;
-        var stdDevTemp = 0f
-        for (i in (0..179).filter { i -> (i - gen) % 6 == 0 }) {
-            bestTemp = if (bestTemp.fitness!! < bestFitOfGen[i].fitness!!) bestTemp else bestFitOfGen[i]
-            avgAvgPerRunTemp += avgFitPerGen[i] / Runs
-            avgBestPerRunTemp += bestFitOfGen[i].fitness!! / Runs
-        }
-        avgOfRunOfAvgOfGen.add(avgAvgPerRunTemp)
-        bestOfRunOfBestOfGen.add(bestTemp)
-        avgOfRunOfBestOfGen.add(avgBestPerRunTemp)
-    }
-
-    val stDevOfRunOfAvgOfGen = stDev(avgFitPerGen,avgOfRunOfAvgOfGen)
-    val stDevOfRunOfBestOfGen = stDev(mapOfBestFitOfGen,avgOfRunOfBestOfGen)
-
-//
-//    avgOfRunOfAvgOfGen.forEach { print("- $it") }
-//    println()
-//    stDevOfRunOfAvgOfGen.forEach { print("- $it") }
-//    println()
-//    avgOfRunOfBestOfGen.forEach { print("- $it") }
-//    println()
-//    stDevOfRunOfBestOfGen.forEach { print("- $it") }
-//    println()
-
-
-
-
-//    var stdvBestOfRun = 0f
-//    val avgOfBestOfRunForStdv = bestOfRunOfBestOfGen.fold(0f) { _, individual: Individual -> individual.fitness!! / 6f }
-//    var sumForStdv = 0f
-//    bestOfRunOfBestOfGen.forEach {
-//        var muFromItSqr = (it.fitness!! - avgOfBestOfRunForStdv).pow(2)
-//        sumForStdv += muFromItSqr
-//        println(it)
-//    }
-//    stdvBestOfRun = (sqrt(sumForStdv / 6f))
-//    println("sd: $stdvBestOfRun")
+    val stDevOfAvgOfGenForAllRuns = stDev(avgFitPerGen,avgOfAvgOfGenForAllRuns)
+    val stDevOfBestOfGenForAllRuns = stDev(mapOfBestFitOfGen,avgOfRunOfBestOfGen)
 
     val columnTitleTmpt = "Gen\t%d:".padStart(26)
-    val avg_tmpt = "avg:\t%8.4f".padStart(24)
-    val best_tmpt = "best:\t%8.4f".padStart(24)
-    val gene_tmpt = "(%.3f, %.3f, %.3f)"
-    val wrst_tmpt = "worst:\t%8.4f".padStart(24)
-    val stdv_tmpt = "s.d.:\t%8.4f".padStart(24)
+    val avgTemplate = "avg:\t%8.4f".padStart(24)
+    val bestTemplate = "best:\t%8.4f".padStart(24)
+    val geneTemplate = "(%.3f, %.3f, %.3f)"
+    val wrstTemplate = "worst:\t%8.4f".padStart(24)
+    val stdvTemplate = "s.d.:\t%8.4f".padStart(24)
     val rowTitleTmpt ="Run %d:".padEnd(220,'-')
-
+    val bavgTemplate = "avg of best:\t%8.4f".padStart(24)
 
 
     for(i in (0..5))print(columnTitleTmpt.format(i))
@@ -174,41 +148,49 @@ fun main() {
     println()
     for(i in (0..29)) {
         println(rowTitleTmpt.format(i + 1))
-        for (j in (0..5)) print(avg_tmpt.format(avgFitPerGen[(6 * j) + i]))
+        for (j in (0..5)) print(avgTemplate.format(avgFitPerGen[(6 * i) + j]))
+        print(avgTemplate.format( avgOfRunOfAvgOfGen[i]))
         println()
-        for (j in (0..5)) print(best_tmpt.format(bestFitOfGen[(6 * j) + i].fitness))
+        for (j in (0..5)) print(bestTemplate.format(bestFitOfGen[(6 * i) + j].fitness))
+        print(bestTemplate.format(bestOfRuns[i].fitness))
         println()
         for (j in (0..5)) print("%28s".format(
-            gene_tmpt.format(
+            geneTemplate.format(
                 bestFitOfGen[(6 * j) + i].gene[0],
                 bestFitOfGen[(6 * j) + i].gene[1],
                 bestFitOfGen[(6 * j) + i].gene[2] ))
         )
+        print("%28s".format(
+            geneTemplate.format(
+                bestOfRuns[i].gene[0],
+                bestOfRuns[i].gene[1],
+                bestOfRuns[i].gene[2]))
+        )
         println()
-        for (j in (0..5)) print(wrst_tmpt.format(worstFitPerGen[(6 * j) + i].fitness))
+        for (j in (0..5)) print(wrstTemplate.format(worstFitPerGen[(6 * i) + j].fitness))
         println()
         for (j in (0..5)) print("%28s".format(
-            gene_tmpt.format(
+            geneTemplate.format(
                 worstFitPerGen[(6 * j) + i].gene[0],
                 worstFitPerGen[(6 * j) + i].gene[1],
                 worstFitPerGen[(6 * j) + i].gene[2]))
         )
+        print(bavgTemplate.format( avgOfRunOfAvgOfGen[i]))
         println()
     }
     println("Totals:".padEnd(220,'-'))
-    for(j in (0..5)) print(avg_tmpt.format(avgOfRunOfAvgOfGen[j]))
+    for(j in (0..5)) print(avgTemplate.format(avgOfAvgOfGenForAllRuns[j]))
     println()
-    for(j in (0..5)) print(stdv_tmpt.format(stDevOfRunOfAvgOfGen[j]))
+    for(j in (0..5)) print(stdvTemplate.format(stDevOfAvgOfGenForAllRuns[j])) //at t=x
     println()
-    for(j in (0..5)) print(best_tmpt.format(bestOfRunOfBestOfGen[j].fitness))
+    for(j in (0..5)) print(bestTemplate.format(bestOfGenForAllRuns[j].fitness))
     println()
-    for(j in (0..5)) print("%s".format(stdv_tmpt.format(stDevOfRunOfBestOfGen[j])))
-    println()
-    for(j in (0..5)) print(gene_tmpt.format(bestFitOfGen[ j ].gene[0],
+    for(j in (0..5)) print("%28s".format(geneTemplate.format(
+        bestFitOfGen[ j ].gene[0],
         bestFitOfGen[j].gene[1],
-        bestFitOfGen[j].gene[2]))
-
-
-
-
+        bestFitOfGen[j].gene[2])))
+    println()
+    for(j in (0..5)) print("%s".format(stdvTemplate.format(stDevOfBestOfGenForAllRuns[j])))
+    println()
+    for(j in (0..5)) print("%s".format(bavgTemplate.format(avgOfRunOfBestOfGen[j])))
 }
